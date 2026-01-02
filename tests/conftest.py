@@ -19,7 +19,7 @@ from cmd_chat.server.routes import register_routes
 @pytest.fixture
 def app():
     name = f"test-{uuid.uuid4().hex[:8]}"
-    
+
     app = Sanic(name)
     Extend(app)
 
@@ -32,7 +32,7 @@ def app():
 
     register_routes(app)
     TestManager(app)
-    
+
     return app
 
 

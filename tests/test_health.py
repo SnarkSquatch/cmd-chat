@@ -1,6 +1,3 @@
-
-
-
 class TestHealth:
 
     def test_health_ok(self, test_client):

@@ -1,5 +1,3 @@
-
-
 class TestWebSocket:
 
     def test_ws_connect_no_user_id(self, test_client):
