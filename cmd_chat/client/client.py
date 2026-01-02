@@ -48,7 +48,6 @@ class Client:
         self.console.print(f"[cyan]• {message}[/]")
 
     def srp_authenticate(self) -> None:
-        """SRP authentication flow"""
         with self.console.status("[cyan]Starting SRP handshake...[/]", spinner="dots"):
 
             usr = srp.User(b"chat", self.password, hash_alg=srp.SHA256)

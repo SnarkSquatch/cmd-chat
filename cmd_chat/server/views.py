@@ -1,24 +1,21 @@
 from dataclasses import asdict
-from uuid import uuid4
+
 import json
 import base64
 
 from sanic import Sanic, Request, response, Websocket
 from sanic.response import HTTPResponse, json as json_response
-from cryptography.fernet import Fernet
 
 from .models import Message, UserSession
 from .logger import logger
 from .helpers import (
     get_client_ip,
-    get_param,
     send_state,
     utcnow,
 )
 
 
 async def srp_init(request: Request, app: Sanic) -> HTTPResponse:
-    """SRP Step 1: клиент отправляет username + A"""
     try:
         data = request.json or {}
         username = data.get("username", "unknown")
@@ -50,7 +47,6 @@ async def srp_init(request: Request, app: Sanic) -> HTTPResponse:
 
 
 async def srp_verify(request: Request, app: Sanic) -> HTTPResponse:
-    """SRP Step 2: клиент отправляет proof M"""
     try:
         data = request.json or {}
         user_id = data.get("user_id")
@@ -104,7 +100,7 @@ async def chat_ws(request: Request, ws: Websocket, app: Sanic) -> None:
         return
 
     manager = app.ctx.connection_manager
-    await manager.connect(user_id, ws)  # await добавлен
+    await manager.connect(user_id, ws)
 
     try:
         await send_state(ws, app)
@@ -134,7 +130,7 @@ async def chat_ws(request: Request, ws: Websocket, app: Sanic) -> None:
     except Exception:
         logger.exception(f"WebSocket error for {user_id}")
     finally:
-        await manager.disconnect(user_id)  # await добавлен
+        await manager.disconnect(user_id)
         await manager.broadcast(
             json.dumps(
                 {
