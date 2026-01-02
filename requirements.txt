@@ -7,3 +7,5 @@ pydantic
 websocket-client
 flask 
 rich
+sanic_ext
+websockets

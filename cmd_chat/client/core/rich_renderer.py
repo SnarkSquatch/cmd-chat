@@ -1,9 +1,9 @@
-import os 
+import os
 import platform
 
-from rich.text import Text 
+from rich.text import Text
 from rich.style import Style
-from rich.console import Console 
+from rich.console import Console
 
 from rich.table import Table
 from cmd_chat.client.core.abs.abs_renderer import ClientRenderer
@@ -16,26 +16,26 @@ console = Console(width=75)
 class RichClientRenderer(ClientRenderer):
 
     def __get_os(self) -> str:
-        """ checking what kind of platform you need
-        """
+        """checking what kind of platform you need"""
         if "Linux" in str(platform.platform()):
             return "Linux"
         return "Windows"
-    
+
     def print_message(self, message: str) -> Text:
-        """ generating string with message in required format
-        """
+        """generating string with message in required format"""
         # split only on the first ':' so message bodies containing ':' are preserved
         parts = message.split(":", 1)
         if parts[0] == self.username:
-            return \
-                Text(text=parts[0], style="bold") + \
-                Text(text=": ", style="bold") + \
-                Text(text=parts[1], style="underline")
-        return \
-            Text(text=parts[0], style="bold") + \
-            Text(text=": ", style="bold") + \
-            Text(text=parts[1], style="underline")
+            return (
+                Text(text=parts[0], style="bold")
+                + Text(text=": ", style="bold")
+                + Text(text=parts[1], style="underline")
+            )
+        return (
+            Text(text=parts[0], style="bold")
+            + Text(text=": ", style="bold")
+            + Text(text=parts[1], style="underline")
+        )
 
     def clear_console(self):
         # For windows clear command its cls
@@ -45,16 +45,10 @@ class RichClientRenderer(ClientRenderer):
         else:
             os.system("cls")
 
-    def print_ip(
-        self,
-        ip: str
-    ) -> str:
+    def print_ip(self, ip: str) -> str:
         return ip
-    
-    def print_username(
-        self,
-        username: str
-    ) -> str:
+
+    def print_username(self, username: str) -> str:
         return username
 
     def print_chat(self, response) -> None:
@@ -68,8 +62,8 @@ class RichClientRenderer(ClientRenderer):
                 table.add_column("USERNAME")
                 for user in response["users_in_chat"]:
                     table.add_row(
-                        self.print_ip(user.split(',')[0]),
-                        self.print_username(user.split(",")[1])
+                        self.print_ip(user.split(",")[0]),
+                        self.print_username(user.split(",")[1]),
                     )
                 console.print(table)
                 console.print("Write 'q' to quit from chat", justify="left")

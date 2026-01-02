@@ -28,13 +28,12 @@ class RSAService(CryptoService):
             stream=True,
         )
         r.raise_for_status()
-        # read the full response content (server returns encrypted symmetric key)
         message = r.content
         self.symmetric_key = rsa.decrypt(message, self.private_key)
         self.fernet = Fernet(self.symmetric_key)
 
     def _generate_keys(self):
-        self.public_key, self.private_key = rsa.newkeys(512)
+        self.public_key, self.private_key = rsa.newkeys(2048)
 
     def _get_generated_keys(self):
         return self.private_key, self.public_key

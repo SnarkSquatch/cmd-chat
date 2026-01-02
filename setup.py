@@ -14,13 +14,9 @@ setuptools.setup(
     long_description=description,
     long_description_content_type="text/markdown",
     url="https://github.com/dinosaurtirex/cmd-chat",
-    license='MIT',
-    python_requires='>=3.10',
-    entry_points={
-        'console_scripts': [
-            'cmd_chat = cmd_chat:main'
-        ]
-    },
+    license="MIT",
+    python_requires=">=3.10",
+    entry_points={"console_scripts": ["cmd_chat = cmd_chat:main"]},
     install_requires=[
         "sanic",
         "requests",
@@ -28,6 +24,6 @@ setuptools.setup(
         "cryptography",
         "colorama",
         "pydantic",
-        "websocket-client"
-    ]
+        "websocket-client",
+    ],
 )

@@ -47,13 +47,13 @@ Everything happens in memory only. Nothing is written to disk.
    `python -m venv venv ; .\venv\Scripts\activate ; pip install -r requirements.txt`
 
 3. Start the server (set a password for client connections):
-   `python cmd_chat.py serve 0.0.0.0 1000 --password YOUR_PASSWORD`
+   `python cmd_chat.py serve 0.0.0.0 3000 --password YOUR_PASSWORD`
 
 4. Connect a client:
-   `python cmd_chat.py connect SERVER_IP 1000 USERNAME YOUR_PASSWORD`
+   `python cmd_chat.py connect SERVER_IP 3000 USERNAME YOUR_PASSWORD`
 
    Example (local run):
-   `python cmd_chat.py connect localhost 1000 tyler YOUR_PASSWORD`
+   `python cmd_chat.py connect localhost 3000 tyler YOUR_PASSWORD`
 
 ---
 
