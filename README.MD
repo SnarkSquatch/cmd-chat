@@ -29,36 +29,65 @@ every "secure" messenger still stores metadata somewhere. this doesn't. it's jus
 │    │─────── POST /srp/init {username, A} ───────► │              │
 │    │         (A = client public ephemeral)        │              │
 │    │                                              │              │
-│    │◄────────── {user_id, B, salt} ────────────── │              │
+│    │◄──── {user_id, B, salt, room_salt} ───────── │              │
 │    │         (B = server public ephemeral)        │              │
+│    │         (room_salt = E2E key derivation)     │              │
 │    │                                              │              │
+│    │  [client derives room_key via HKDF:          │              │
+│    │   room_key = HKDF(password, room_salt)]      │              │
 │    │                                              │              │
-│    │  [both sides compute shared session key      │              │
+│    │  [both sides compute SRP session key         │              │
 │    │   using password + ephemeral values]         │              │
 │    │                                              │              │
-│    │                                              │              │
-│    │─────── POST /srp/verify {user_id, M} ──────► │              |
+│    │─────── POST /srp/verify {user_id, M} ──────► │              │
 │    │         (M = client proof)                   │              │
 │    │                                              │              │
 │    │◄────────── {H_AMK, session_key} ──────────── │              │
 │    │         (H_AMK = server proof)               │              │
 │    │                                              │              │
 │    │  [password never transmitted]                │              │
-│    │  [MITM can't derive session key]             │              |
+│    │  [MITM can't derive session key]             │              │
 │    │                                              │              │
 ├──────────────────────────────────────────────────────────────────┤
-│                        ENCRYPTED CHAT                            │
+│                      E2E ENCRYPTED CHAT                          │
 ├──────────────────────────────────────────────────────────────────┤
 │    │                                              │              │
 │    │═══════ WebSocket /ws/chat?user_id ═════════► │              │
 │    │         (authenticated session)              │              │
 │    │                                              │              │
-│    │◄═══════════ AES-encrypted messages ════════► │              │
-│    │         (Fernet = AES-128-CBC + HMAC)        │              │
 │    │                                              │              │
+│  ┌─┴─┐                                        ┌──┴──┐            │
+│  │ C │──── encrypt(msg, room_key) ───────────►│  S  │            │
+│  │ L │                                        │  E  │            │
+│  │ I │◄─── ciphertext (broadcast) ────────────│  R  │            │
+│  │ E │                                        │  V  │            │
+│  │ N │     decrypt(ciphertext, room_key)      │  E  │            │
+│  │ T │                                        │  R  │            │
+│  └─┬─┘                                        └──┬──┘            │
+│    │                                              │              │
+│    │  [server stores ONLY ciphertext]             │              │
+│    │  [server CANNOT read messages]               │              │
+│    │  [all clients with same password             │              │
+│    │   derive identical room_key]                 │              │
+│    │                                              │              │
+│    │  Encryption: Fernet (AES-128-CBC + HMAC)     │              │
+│    │  Key derivation: HKDF-SHA256                 │              │
 │    │                                              │              │
 │    │  [on disconnect: keys wiped from RAM]        │              │
 │    │                                              │              │
+└──────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────┐
+│                      KEY HIERARCHY                               │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  password ──┬──► SRP ──► session_key (per-user, auth only)       │
+│             │                                                    │
+│             └──► HKDF(password, room_salt) ──► room_key (shared) │
+│                                                                  │
+│  room_salt: generated once at server start                       │
+│  room_key:  deterministic, same for all clients with same pwd    │
+│                                                                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -67,8 +96,6 @@ every "secure" messenger still stores metadata somewhere. this doesn't. it's jus
 ## install
 
 ```bash
-git clone https://github.com/emilycodestar/cmd-chat.git
-cd cmd-chat
 python -m venv venv && source venv/bin/activate && pip install -r requirements.txt
 ```
 

@@ -9,14 +9,12 @@ class MessageStore:
     def add(self, message: Message) -> None:
         self._messages.append(message)
 
-
     def get_all(self) -> list[Message]:
         return self._messages.copy()
 
     def clear(self) -> None:
         count = len(self._messages)
         self._messages.clear()
-
 
     def count(self) -> int:
         return len(self._messages)
@@ -29,7 +27,6 @@ class UserSessionStore:
     def add(self, session: UserSession) -> None:
         self._sessions[session.user_id] = session
 
-
     def get(self, user_id: str) -> Optional[UserSession]:
         return self._sessions.get(user_id)
 
@@ -40,7 +37,6 @@ class UserSessionStore:
     def remove(self, user_id: str) -> None:
         if user_id in self._sessions:
             del self._sessions[user_id]
-
 
     def cleanup_stale(self, timeout_seconds: int = 3600) -> int:
         stale_ids = [

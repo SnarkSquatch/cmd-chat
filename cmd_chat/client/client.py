@@ -6,6 +6,8 @@ from typing import Optional
 import srp
 import requests
 from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives import hashes
 import websockets
 from rich.console import Console
 from rich.panel import Panel
@@ -23,6 +25,7 @@ class Client:
         self.password = (password or "").encode()
         self.user_id: Optional[str] = None
         self.fernet: Optional[Fernet] = None
+        self.room_fernet: Optional[Fernet] = None
 
         self.console = Console()
         self.messages: list[dict] = []
@@ -67,6 +70,16 @@ class Client:
             self.user_id = init_data["user_id"]
             B = base64.b64decode(init_data["B"])
             salt = base64.b64decode(init_data["salt"])
+            room_salt = base64.b64decode(init_data["room_salt"])
+
+            hkdf = HKDF(
+                algorithm=hashes.SHA256(),
+                length=32,
+                salt=room_salt,
+                info=b"cmd-chat-room-key",
+            )
+            room_key = hkdf.derive(self.password)
+            self.room_fernet = Fernet(base64.urlsafe_b64encode(room_key))
 
             M = usr.process_challenge(salt, B)
 
@@ -95,6 +108,15 @@ class Client:
             self.fernet = Fernet(session_key)
 
         self.success(f"SRP authenticated (session: {self.user_id[:8]}...)")
+
+    def decrypt_message(self, msg: dict) -> dict:
+        if "text" in msg and msg["text"]:
+            try:
+                decrypted = self.room_fernet.decrypt(msg["text"].encode()).decode()
+                msg["text"] = decrypted
+            except Exception:
+                msg["text"] = "[decrypt failed]"
+        return msg
 
     def render_messages(self) -> None:
         self.console.clear()
@@ -131,12 +153,15 @@ class Client:
                 msg_type = data.get("type", "")
 
                 if msg_type == "init":
-                    self.messages = data.get("messages", [])
+                    messages = [
+                        self.decrypt_message(m) for m in data.get("messages", [])
+                    ]
+                    self.messages = messages
                     self.users = data.get("users", [])
                     self.connected = True
                     self.render_messages()
                 elif msg_type == "message":
-                    msg_data = data.get("data", {})
+                    msg_data = self.decrypt_message(data.get("data", {}))
                     self.messages.append(msg_data)
                     self.render_messages()
                 elif msg_type == "user_left":
@@ -156,7 +181,8 @@ class Client:
                     self.running = False
                     break
                 if text.strip():
-                    await ws.send(text)
+                    encrypted = self.room_fernet.encrypt(text.encode()).decode()
+                    await ws.send(encrypted)
             except (EOFError, KeyboardInterrupt):
                 self.running = False
                 break

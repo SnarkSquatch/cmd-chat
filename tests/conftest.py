@@ -6,9 +6,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import uuid
 import pytest
 from sanic_testing import TestManager
+import os
 from sanic import Sanic
 from sanic_ext import Extend
-from cryptography.fernet import Fernet
 
 from cmd_chat.server.managers import ConnectionManager
 from cmd_chat.server.stores import MessageStore, UserSessionStore
@@ -27,7 +27,7 @@ def app():
     app.ctx.session_store = UserSessionStore()
     app.ctx.connection_manager = ConnectionManager()
     app.ctx.srp_manager = SRPAuthManager("testpassword")
-    app.ctx.fernet_key = Fernet.generate_key()
+    app.ctx.room_salt = os.urandom(16)
     app.ctx.cleanup_task = None
 
     register_routes(app)

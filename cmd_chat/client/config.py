@@ -1,1 +1,0 @@
-MESSAGES_TO_SHOW = 5

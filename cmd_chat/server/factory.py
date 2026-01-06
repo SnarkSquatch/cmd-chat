@@ -3,7 +3,7 @@ from contextlib import suppress
 from cryptography.fernet import Fernet
 from sanic import Sanic
 from sanic_ext import Extend
-
+import os
 from .managers import ConnectionManager
 from .stores import MessageStore, UserSessionStore
 from .srp_auth import SRPAuthManager
@@ -19,7 +19,7 @@ def create_app(password: str = "", name: str = "cmd-chat-server") -> Sanic:
     app.ctx.session_store = UserSessionStore()
     app.ctx.connection_manager = ConnectionManager()
     app.ctx.srp_manager = SRPAuthManager(password)
-    app.ctx.fernet_key = Fernet.generate_key()
+    app.ctx.room_salt = os.urandom(16)
     app.ctx.cleanup_task = None
 
     register_lifecycle(app)

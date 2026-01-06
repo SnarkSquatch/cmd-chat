@@ -35,6 +35,7 @@ async def srp_init(request: Request, app: Sanic) -> HTTPResponse:
                 "user_id": user_id,
                 "B": base64.b64encode(B).decode(),
                 "salt": base64.b64encode(salt).decode(),
+                "room_salt": base64.b64encode(app.ctx.room_salt).decode(),
             }
         )
 
@@ -65,7 +66,6 @@ async def srp_verify(request: Request, app: Sanic) -> HTTPResponse:
             fernet_key=fernet_key,
         )
         app.ctx.session_store.add(session)
-
 
         return response.json(
             {
