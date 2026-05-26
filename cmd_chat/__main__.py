@@ -1,0 +1,1 @@
+from cmd_chat import main; main()
