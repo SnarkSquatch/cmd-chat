@@ -5,7 +5,9 @@ from typing import Optional
 
 import srp
 import requests
-from cryptography.fernet import Fernet
+#from cryptography.fernet import Fernet (replaced see lines 9 and 10)
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+import os
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives import hashes
 import websockets
@@ -22,10 +24,14 @@ class Client:
         self.server = server
         self.port = port
         self.username = username
-        self.password = (password or "").encode()
-        self.user_id: Optional[str] = None
-        self.fernet: Optional[Fernet] = None
-        self.room_fernet: Optional[Fernet] = None
+        self.username = password
+        #self.password = (password or "").encode() replaced with line 29
+        #self.user_id: Optional[str] = None replaced with line 30
+        #self.fernet: Optional[bytes] = None
+        #self.room_fernet: Optional[bytes] = None
+        #self.fernet: Optional[Fernet] = None
+        #self.room_fernet: Optional[Fernet] = None
+        self.fernet: Optional[bytes] = None # cleaning fernet references
 
         self.console = Console()
         self.messages: list[dict] = []
@@ -79,7 +85,7 @@ class Client:
                 info=b"cmd-chat-room-key",
             )
             room_key = hkdf.derive(self.password)
-            self.room_fernet = Fernet(base64.urlsafe_b64encode(room_key))
+            self.room_fernet = room_key # store raw 32 byte key directly
 
             M = usr.process_challenge(salt, B)
 
@@ -105,17 +111,26 @@ class Client:
                 raise ValueError("Server authentication failed")
 
             session_key = base64.b64decode(verify_data["session_key"])
-            self.fernet = Fernet(session_key)
+            #self.fernet = Fernet(session_key) replaced with line 114
+            self.fernet = session_key # just store the raw key
 
         self.success(f"SRP authenticated (session: {self.user_id[:8]}...)")
 
     def decrypt_message(self, msg: dict) -> dict:
-        if "text" in msg and msg["text"]:
+        if "text" in msg and msg["text"] and self.room_fernet:
             try:
-                decrypted = self.room_fernet.decrypt(msg["text"].encode()).decode()
+                # decode incoming base64 payload to raw bytes
+                raw_encrypted = base64.b64decode(msg["text"].encode())
+                aesgcm = AESGCM(self.room_fernet)
+                
+                # slice 12 byte nonce decrypt cyphertext
+                nonce = raw_encrypted[:12]
+                ciphertext = raw_encrypted[12:]
+                
+                decrypted = aesgcm.decrypt(nonce, ciphertext, None).decode()
                 msg["text"] = decrypted
             except Exception:
-                msg["text"] = "[decrypt failed]"
+                    msg["text"] = "[decrypt failed]"
         return msg
 
     def render_messages(self) -> None:
@@ -180,9 +195,17 @@ class Client:
                 if text.lower() in ("q", "quit", "exit"):
                     self.running = False
                     break
-                if text.strip():
-                    encrypted = self.room_fernet.encrypt(text.encode()).decode()
+                if text.strip() and self.room_fernet:
+                    aesgcm = AESGCM(self.room_fernet)
+                    nonce = os.urandom(12) # secure 12 byte nonce
+                    
+                    #encrypt and staple nonce to front
+                    encrypted_bytes = nonce + aesgcm.encrypt(nonce, text.encode(), None)
+                    #base64 encode to play nice with existing socket layer
+                    encrypted = base64.b64encode(encrypted_bytes).decode()
+                    
                     await ws.send(encrypted)
+                
             except (EOFError, KeyboardInterrupt):
                 self.running = False
                 break

@@ -56,21 +56,23 @@ async def srp_verify(request: Request, app: Sanic) -> HTTPResponse:
         client_proof = base64.b64decode(client_proof_b64)
 
         H_AMK, session_key = app.ctx.srp_manager.verify_auth(user_id, client_proof)
-
-        fernet_key = base64.urlsafe_b64encode(session_key[:32])
-
+        
+        #slice first 32 bytes to ensure proper 256 bit key length
+        aes_256_key = session_key[:32]
+        
         session = UserSession(
             user_id=user_id,
             ip=get_client_ip(request),
             username=username,
-            fernet_key=fernet_key,
-        )
+            fernet_key=aes_256_key, #store raw 32 bytes in session
+        )    
+           
         app.ctx.session_store.add(session)
 
         return response.json(
             {
                 "H_AMK": base64.b64encode(H_AMK).decode(),
-                "session_key": base64.b64encode(fernet_key).decode(),
+                "session_key": base64.b64encode(aes_256_key).decode(),
             }
         )
 
