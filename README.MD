@@ -124,7 +124,7 @@ python cmd_chat.py connect SERVER_IP 3000 username mysecret
 ## features
 
 - **ram only** — nothing touches disk
-- **rsa + aes** — key exchange + symmetric encryption
+- **rsa + aes** — key exchange + symmetric encryption | upgraded to AES256 by SnarkSquatch
 - **no central server** — direct p2p connection
 - **srp auth** — password never sent over network
 
